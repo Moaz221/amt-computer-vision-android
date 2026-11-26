@@ -90,7 +90,7 @@ fun MainScreen(
 private fun TopBar() {
     Column {
         Text(
-            "AMT // COMPUTER VISION",
+            "MOAZ COMPUTER VISION",
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
@@ -126,7 +126,7 @@ private fun HudViewport(state: UiState, modifier: Modifier = Modifier) {
         } else {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    "NO SIGNAL // UPLOAD AN IMAGE",
+                    "UPLOAD AN IMAGE",
                     fontFamily = FontFamily.Monospace,
                     fontSize = 13.sp,
                     color = TextDim
@@ -327,7 +327,7 @@ private fun InfoRow(info: String?) {
         shape = RoundedCornerShape(6.dp)
     ) {
         Text(
-            "IMAGE INTEL //  SHAPE ${info ?: "-"}   DIM ${info?.substringBefore(" x ") ?: "-"}",
+            "IMAGE INFO   SHAPE ${info ?: "-"}   DIM ${info?.substringBefore(" x ") ?: "-"}",
             Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             fontFamily = FontFamily.Monospace,
             fontSize = 11.sp,
@@ -345,7 +345,7 @@ private fun PathBar(path: String?) {
         shape = RoundedCornerShape(6.dp)
     ) {
         Text(
-            "FILEPATH // ${path ?: "-"}",
+            "FILEPATH   ${path ?: "-"}",
             Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             fontFamily = FontFamily.Monospace,
             fontSize = 11.sp,

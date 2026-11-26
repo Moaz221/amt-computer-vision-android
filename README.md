@@ -1,4 +1,4 @@
-# AMT // Computer Vision (Android)
+# MOAZ Computer Vision (Android)
 
 Native Android version of the AMT computer-vision course task: an image
 classifier with a gaming HUD interface, written in **Kotlin + Jetpack Compose**.
