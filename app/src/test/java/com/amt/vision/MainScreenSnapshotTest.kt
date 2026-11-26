@@ -44,14 +44,14 @@ class MainScreenSnapshotTest {
                 models = models,
                 selectedModel = "VGG-19",
                 prediction = PredictionUi(
-                    label = "mountain",
-                    confidence = 0.94f,
-                    top = listOf("mountain" to 0.94f, "glacier" to 0.04f, "sea" to 0.01f),
+                    label = "tabby cat",
+                    confidence = 0.93f,
+                    top = listOf("tabby cat" to 0.93f, "tiger cat" to 0.05f, "lynx" to 0.01f),
                     note = "model: VGG-19"
                 ),
                 showInfo = true,
-                imageInfo = "1280 x 853 x 3",
-                filePath = "IMG_20261127_mountain.jpg",
+                imageInfo = "1024 x 626 x 3",
+                filePath = "IMG_20261127_cat.jpg",
                 status = "PREDICTION COMPLETE"
             )
         )
@@ -67,7 +67,7 @@ class MainScreenSnapshotTest {
                 cannyOn = true,
                 models = models,
                 selectedModel = "ENSEMBLE (ALL MODELS)",
-                filePath = "IMG_20261127_mountain.jpg",
+                filePath = "IMG_20261127_cat.jpg",
                 status = "CANNY EDGE MAP ACTIVE"
             )
         )
