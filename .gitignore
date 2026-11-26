@@ -1,0 +1,10 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/app/build/
+*.h5
+/app/src/main/assets/models/*.tflite
+!/app/src/main/assets/models/.gitkeep
