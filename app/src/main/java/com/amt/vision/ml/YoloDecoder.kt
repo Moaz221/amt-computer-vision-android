@@ -40,7 +40,9 @@ object YoloDecoder {
         srcW: Int,
         srcH: Int,
         confThreshold: Float = 0.25f,
-        iouThreshold: Float = 0.45f
+        iouThreshold: Float = 0.45f,
+        classMinScore: Map<Int, Float> = emptyMap(),
+        minBoxFraction: Float = 0f
     ): List<Detection> {
         if (rows.isEmpty()) return emptyList()
         val lb = letterbox(srcW, srcH, inputSize)
@@ -57,16 +59,41 @@ object YoloDecoder {
             var best = 0
             for (c in 1 until r.size - 5) if (r[5 + c] > r[5 + best]) best = c
             val score = obj * r[5 + best]
-            if (score < confThreshold) continue
+            if (score < max(confThreshold, classMinScore[best] ?: 0f)) continue
             val cx = r[0] * k; val cy = r[1] * k; val w = r[2] * k; val h = r[3] * k
             val l = ((cx - w / 2f - lb.padX) / lb.scale).coerceIn(0f, srcW.toFloat())
             val t = ((cy - h / 2f - lb.padY) / lb.scale).coerceIn(0f, srcH.toFloat())
             val rr = ((cx + w / 2f - lb.padX) / lb.scale).coerceIn(0f, srcW.toFloat())
             val b = ((cy + h / 2f - lb.padY) / lb.scale).coerceIn(0f, srcH.toFloat())
             if (rr <= l || b <= t) continue
+            if (rr - l < minBoxFraction * max(srcW, srcH) || b - t < minBoxFraction * max(srcW, srcH)) continue
             found += Detection(labels.getOrElse(best) { "class $best" }, best, score, l, t, rr, b)
         }
-        return nms(found, iouThreshold)
+        return dropContainedOtherClass(nms(found, iouThreshold))
+    }
+
+    /**
+     * A weaker box of another class sitting (mostly) inside a stronger box is almost always a
+     * false positive (for example a "mask" on glasses inside a "no mask" face).
+     */
+    fun dropContainedOtherClass(dets: List<Detection>): List<Detection> {
+        val sorted = dets.sortedByDescending { it.score }
+        val kept = ArrayList<Detection>()
+        for (d in sorted) {
+            val inside = kept.any {
+                it.classId != d.classId && containedFraction(d, it) > 0.8f
+            }
+            if (!inside) kept += d
+        }
+        return kept
+    }
+
+    private fun containedFraction(inner: Detection, outer: Detection): Float {
+        val iw = min(inner.right, outer.right) - max(inner.left, outer.left)
+        val ih = min(inner.bottom, outer.bottom) - max(inner.top, outer.top)
+        if (iw <= 0f || ih <= 0f) return 0f
+        val area = (inner.right - inner.left) * (inner.bottom - inner.top)
+        return if (area <= 0f) 0f else iw * ih / area
     }
 
     /** Per-class non-maximum suppression, highest score first. */

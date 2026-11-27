@@ -18,6 +18,8 @@ class ObjectDetector(private val context: Context) {
     companion object {
         const val MODEL_FILE = "detector.tflite"
         const val CLASSES_FILE = "detector_classes.txt"
+        const val MASK_MIN_SCORE = 0.45f
+        const val MIN_BOX_FRACTION = 0.03f
         private const val DIR = "models"
     }
 
@@ -68,6 +70,12 @@ class ObjectDetector(private val context: Context) {
         check(outShape[2] == 5 + classes.size) {
             "model has ${outShape[2] - 5} classes but $CLASSES_FILE lists ${classes.size}"
         }
-        return YoloDecoder.decode(output[0], classes, size, bitmap.width, bitmap.height, conf)
+        // "mask" needs a higher score than other classes: glasses and similar objects look like masks.
+        val maskId = classes.indexOf("mask")
+        val minScores = if (maskId >= 0) mapOf(maskId to MASK_MIN_SCORE) else emptyMap()
+        return YoloDecoder.decode(
+            output[0], classes, size, bitmap.width, bitmap.height, conf,
+            classMinScore = minScores, minBoxFraction = MIN_BOX_FRACTION
+        )
     }
 }

@@ -32,6 +32,20 @@ class YoloDecoderTest {
         assertEquals(102.4f, d[0].bottom, 0.5f)
     }
 
+    @Test fun weakMaskInsideStrongerNoMaskFaceIsDropped() {
+        val face = floatArrayOf(0.5f, 0.5f, 0.5f, 0.6f, 0.95f, 0.05f, 0.95f)   // no mask, big
+        val glasses = floatArrayOf(0.5f, 0.4f, 0.3f, 0.1f, 0.9f, 0.7f, 0.1f)   // mask-ish, inside face
+        val d = YoloDecoder.decode(arrayOf(face, glasses), labels, 480, 480, 480)
+        assertEquals(1, d.size)
+        assertEquals("no mask", d[0].label)
+    }
+
+    @Test fun maskNeedsItsOwnHigherScore() {
+        val weakMask = floatArrayOf(0.5f, 0.5f, 0.3f, 0.3f, 0.5f, 0.6f, 0.1f) // score 0.30
+        val d = YoloDecoder.decode(arrayOf(weakMask), labels, 480, 480, 480, 0.2f, 0.45f, mapOf(0 to 0.45f))
+        assertEquals(0, d.size)
+    }
+
     @Test fun dropsLowConfidenceAndSuppressesOverlaps() {
         val a = floatArrayOf(0.5f, 0.5f, 0.4f, 0.4f, 0.9f, 0.9f, 0.1f)
         val b = floatArrayOf(0.51f, 0.5f, 0.4f, 0.4f, 0.8f, 0.9f, 0.1f) // same object, lower score
@@ -43,7 +57,7 @@ class YoloDecoderTest {
 
     @Test fun differentClassesAreNotSuppressedAgainstEachOther() {
         val a = floatArrayOf(0.5f, 0.5f, 0.4f, 0.4f, 0.9f, 0.9f, 0.1f)
-        val b = floatArrayOf(0.5f, 0.5f, 0.4f, 0.4f, 0.9f, 0.1f, 0.9f)
+        val b = floatArrayOf(0.15f, 0.15f, 0.1f, 0.1f, 0.9f, 0.1f, 0.9f)
         assertEquals(2, YoloDecoder.decode(arrayOf(a, b), labels, 480, 480, 480).size)
     }
 }
