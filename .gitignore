@@ -7,8 +7,6 @@
 /app/build/
 *.h5
 /models/
-/app/src/main/assets/models/*.tflite
-!/app/src/main/assets/models/.gitkeep
 # written by training/train_models.py, read by tools/convert_to_tflite.py
 /models_config.json
 /classes.txt

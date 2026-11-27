@@ -20,7 +20,7 @@ class MainScreenSnapshotTest {
         theme = "android:Theme.Black.NoTitleBar"
     )
 
-    private val models = listOf("VGG-19", "InceptionV3", "AlexNet", "Custom CNN", "ENSEMBLE (ALL MODELS)")
+    private val models = listOf("MobileNetV2", "InceptionV3", "ResNet50", "EfficientNet-Lite0", "EfficientNet-Lite2", "ENSEMBLE (ALL MODELS)")
 
     private fun sampleBitmap(): Bitmap =
         BitmapFactory.decodeResource(paparazzi.context.resources, R.drawable.sample)
@@ -33,7 +33,7 @@ class MainScreenSnapshotTest {
 
     @Test
     fun standby() {
-        screen(UiState(models = models, selectedModel = "VGG-19"))
+        screen(UiState(models = models, selectedModel = "ENSEMBLE (ALL MODELS)"))
     }
 
     @Test
@@ -42,12 +42,13 @@ class MainScreenSnapshotTest {
             UiState(
                 bitmap = sampleBitmap(),
                 models = models,
-                selectedModel = "VGG-19",
+                selectedModel = "ENSEMBLE (ALL MODELS)",
                 prediction = PredictionUi(
-                    label = "tabby cat",
-                    confidence = 0.93f,
-                    top = listOf("tabby cat" to 0.93f, "tiger cat" to 0.05f, "lynx" to 0.01f),
-                    note = "model: VGG-19"
+                    // real ensemble output for this photo (tools/predict_demo.py)
+                    label = "tabby",
+                    confidence = 0.447f,
+                    top = listOf("tabby" to 0.447f, "tiger cat" to 0.186f, "Egyptian cat" to 0.153f),
+                    note = "ensemble of 5: MobileNetV2, InceptionV3, ResNet50, EfficientNet-Lite0, EfficientNet-Lite2"
                 ),
                 showInfo = true,
                 imageInfo = "1024 x 626 x 3",

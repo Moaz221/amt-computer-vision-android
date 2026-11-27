@@ -11,6 +11,7 @@ package com.amt.vision.ml
  *  - rescale  RGB / 255            -> 0..1
  *  - tf       RGB / 127.5 - 1      -> -1..1
  *  - caffe    RGB -> BGR, minus [103.939, 116.779, 123.68]
+ *  - effnet   (RGB - 127) / 128    (EfficientNet-Lite)
  *
  * No Android types are used here, so `PreprocessingTest` can check these
  * numbers on a plain JVM against the Python reference.
@@ -19,7 +20,7 @@ object Preprocessing {
 
     val CAFFE_MEAN_BGR = floatArrayOf(103.939f, 116.779f, 123.68f)
 
-    val MODES = listOf("raw", "rescale", "tf", "caffe")
+    val MODES = listOf("raw", "rescale", "tf", "caffe", "effnet")
 
     const val DEFAULT_MODE = "rescale"
 
@@ -32,6 +33,7 @@ object Preprocessing {
             "rescale", "div255", "0..1" -> "rescale"
             "tf", "-1..1", "tf_1_1" -> "tf"
             "caffe", "bgr" -> "caffe"
+            "effnet", "efficientnet" -> "effnet"
             else -> throw IllegalArgumentException(
                 "unknown preprocess mode '$mode' (supported: ${MODES.joinToString()})"
             )
@@ -63,6 +65,11 @@ object Preprocessing {
                         out[0] = r / 127.5f - 1f
                         out[1] = g / 127.5f - 1f
                         out[2] = b / 127.5f - 1f
+                    }
+                    "effnet" -> {
+                        out[0] = (r - 127f) / 128f
+                        out[1] = (g - 127f) / 128f
+                        out[2] = (b - 127f) / 128f
                     }
                     // caffe: BGR channel order, then per-channel mean subtraction
                     else -> {

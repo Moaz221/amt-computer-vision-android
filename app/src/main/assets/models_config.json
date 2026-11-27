@@ -1,9 +1,55 @@
 {
   "classes_file": "classes.txt",
   "models": [
-    { "name": "VGG-19",     "file": "vgg19.tflite",       "input_size": [224, 224], "preprocess": "caffe",   "output": "softmax" },
-    { "name": "InceptionV3","file": "inceptionv3.tflite", "input_size": [299, 299], "preprocess": "tf",      "output": "softmax" },
-    { "name": "AlexNet",    "file": "alexnet.tflite",     "input_size": [227, 227], "preprocess": "caffe",   "output": "softmax" },
-    { "name": "Custom CNN", "file": "custom_cnn.tflite",  "input_size": [100, 100], "preprocess": "rescale", "output": "softmax" }
+    {
+      "name": "MobileNetV2",
+      "file": "mobilenetv2.tflite",
+      "input_size": [
+        224,
+        224
+      ],
+      "preprocess": "tf",
+      "output": "softmax"
+    },
+    {
+      "name": "InceptionV3",
+      "file": "inceptionv3.tflite",
+      "input_size": [
+        299,
+        299
+      ],
+      "preprocess": "tf",
+      "output": "softmax"
+    },
+    {
+      "name": "ResNet50",
+      "file": "resnet50.tflite",
+      "input_size": [
+        224,
+        224
+      ],
+      "preprocess": "caffe",
+      "output": "softmax"
+    },
+    {
+      "name": "EfficientNet-Lite0",
+      "file": "efficientnet_lite0.tflite",
+      "input_size": [
+        224,
+        224
+      ],
+      "preprocess": "effnet",
+      "output": "softmax"
+    },
+    {
+      "name": "EfficientNet-Lite2",
+      "file": "efficientnet_lite2.tflite",
+      "input_size": [
+        260,
+        260
+      ],
+      "preprocess": "effnet",
+      "output": "softmax"
+    }
   ]
 }

@@ -18,7 +18,9 @@ input size, laid out HWC. Output is float32 in the same layout.
     tf       RGB / 127.5 - 1              -> -1..1
              (Keras preprocess_input for InceptionV3 / ResNet)
     caffe    RGB -> BGR, minus [103.939, 116.779, 123.68]
-             (Keras preprocess_input for VGG / AlexNet, Caffe channel order)
+             (Keras preprocess_input for VGG / AlexNet / ResNet50, Caffe channel order)
+    effnet   (RGB - 127) / 128            -> about -1..1
+             (EfficientNet-Lite from MediaPipe)
 
 OUTPUT_MODES - what the last layer of the model produces.
 
@@ -36,6 +38,7 @@ PREPROCESS_MODES = {
     "rescale": "RGB / 255 -> 0..1",
     "tf": "RGB / 127.5 - 1 -> -1..1",
     "caffe": "RGB -> BGR, minus [103.939, 116.779, 123.68]",
+    "effnet": "(RGB - 127) / 128",
 }
 
 OUTPUT_MODES = {
@@ -58,6 +61,8 @@ _ALIASES = {
     "tf_1_1": "tf",
     "caffe": "caffe",
     "bgr": "caffe",
+    "effnet": "effnet",
+    "efficientnet": "effnet",
 }
 
 # The four models the app ships with. Keep in sync with
@@ -114,6 +119,8 @@ def apply_preprocess(x, mode):
         return x / 255.0
     if mode == "tf":
         return x / 127.5 - 1.0
+    if mode == "effnet":
+        return (x - 127.0) / 128.0
     # caffe: RGB -> BGR, then per-channel mean subtraction
     bgr = x[..., ::-1]
     return bgr - np.asarray(CAFFE_MEAN_BGR, dtype=np.float32)
@@ -131,6 +138,8 @@ def apply_preprocess_tf(x, mode):
         return x / 255.0
     if mode == "tf":
         return x / 127.5 - 1.0
+    if mode == "effnet":
+        return (x - 127.0) / 128.0
     bgr = tf.stack([x[..., 2], x[..., 1], x[..., 0]], axis=-1)
     return bgr - tf.constant(CAFFE_MEAN_BGR, dtype=tf.float32)
 

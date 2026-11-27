@@ -16,8 +16,9 @@ classifier with a gaming HUD interface, written in **Kotlin + Jetpack Compose**.
   rendered as neon edges.
 - **Predict**: runs a TensorFlow Lite model and shows the predicted class,
   confidence bar and top-3 guesses.
-- **Model selector**: VGG-19, InceptionV3, AlexNet and Custom CNN, each with
-  its own input size and preprocessing from `models_config.json`.
+- **Model selector**: MobileNetV2, InceptionV3, ResNet50, EfficientNet-Lite0 and
+  EfficientNet-Lite2, each with its own input size and preprocessing from
+  `models_config.json`.
 - **Ensemble (advanced challenge)**: averages the probabilities of every
   available model and reports which models were used/skipped.
 - **Unified neon theme**: one cyan accent on deep-space dark, HUD grid,
@@ -25,16 +26,50 @@ classifier with a gaming HUD interface, written in **Kotlin + Jetpack Compose**.
 
 ## Build & run
 
-1. Open the repo in **Android Studio** (Hedgehog or newer).
+It works out of the box: five pretrained ImageNet models are already in
+`app/src/main/assets/models/`, so there is nothing to download, train or convert.
+
+1. Clone the repo and open it in **Android Studio** (Hedgehog or newer, JDK 17).
 2. Let Gradle sync, then run on a device or emulator (minSdk 24).
+   Or from a terminal: `./gradlew assembleDebug` and install
+   `app/build/outputs/apk/debug/app-debug.apk`.
+3. Tap **UPLOAD**, pick any photo, tap **PREDICT**.
 
-The app builds and runs without any weights: Predict reports `MISSING WEIGHTS`
-until you add them, and everything else (gallery, Canny, HUD) works.
+Everything runs on the phone, offline. No server, no account, no cost.
 
-## Adding your own models
+## The bundled models
 
-The `.tflite` files are not in the repo (too large). Three steps, all from the
-repo root.
+Pretrained on ImageNet (1000 everyday classes: animals, vehicles, food, objects,
+places, people's clothing), so any ordinary photo gets a sensible answer, not only
+nature scenes. `classes.txt` holds the 1000 names.
+
+| model in the selector | size | source |
+|---|---|---|
+| MobileNetV2 | 7 MB | Keras ImageNet weights, converted to float16 TFLite |
+| InceptionV3 | 48 MB | same |
+| ResNet50 | 51 MB | same |
+| EfficientNet-Lite0 | 19 MB | Google MediaPipe model storage, used as published |
+| EfficientNet-Lite2 | 24 MB | same |
+| **ENSEMBLE (ALL MODELS)** | | averages the probabilities of the five models above |
+
+`python tools/make_pretrained_models.py` rebuilds all of them (needs
+`pip install tensorflow-cpu pillow`).
+
+Check the numbers without a phone:
+
+```
+python tools/predict_demo.py photo1.jpg photo2.jpg
+```
+
+It resizes and normalises each photo exactly the way the app does and prints the
+top-3 per model plus the ensemble.
+
+## Using your own trained models (optional)
+
+Only if you want the app to run weights you trained yourself, for example the Intel
+scenes classifier from the course. Remove or keep the bundled files, then three steps
+from the repo root. Note that `models_config.json` and `classes.txt` in the assets
+folder describe the bundled ImageNet models; the converter rewrites them for yours.
 
 ### 1. Train, or bring your own `.h5`
 
@@ -100,7 +135,7 @@ hand (or re-run the converter with the right flags).
 
 A model only recognises what it was trained on. Feed it a differently scaled
 image and it still returns confident-looking numbers, just wrong ones. There
-are four modes and both sides use the same four:
+are five modes and both sides use the same five:
 
 | mode      | what it does                                   | value range |
 |-----------|------------------------------------------------|-------------|
@@ -108,6 +143,7 @@ are four modes and both sides use the same four:
 | `rescale` | RGB / 255                                      | 0..1        |
 | `tf`      | RGB / 127.5 - 1                                | -1..1       |
 | `caffe`   | RGB -> BGR, minus `[103.939, 116.779, 123.68]` | about -124..131 |
+| `effnet`  | (RGB - 127) / 128 (EfficientNet-Lite)          | about -1..1 |
 
 `raw` exists for one reason: some `.h5` files normalise their own input. A model
 whose graph starts with `Rescaling(1/255)` must be fed 0..255, not 0..1,
@@ -121,7 +157,7 @@ Each entry in `models_config.json`:
 | `name`       | label in the model selector                                |
 | `file`       | `.tflite` in `app/src/main/assets/models/`                 |
 | `input_size` | `[width, height]` the bitmap is resized to                 |
-| `preprocess` | one of the four modes above                                |
+| `preprocess` | one of the five modes above                                |
 | `output`     | `softmax` (probabilities) or `logits` (raw scores)         |
 
 ### logits vs softmax
@@ -137,7 +173,7 @@ if you edit the config by hand.
 
 The two implementations are `common/preprocess.py` (used by training and by the
 conversion/verification scripts) and `Preprocessing.kt` (used by the app).
-`PreprocessingTest` holds the reference numbers for all four modes; if it fails,
+`PreprocessingTest` holds the reference numbers for all five modes; if it fails,
 the phone and the trainer have drifted apart.
 
 ## Checking a model end to end
@@ -175,11 +211,13 @@ app/src/main/java/com/amt/vision/
     vm/          state (ViewModel)
 app/src/test/    Paparazzi screenshot tests (the images above) + PreprocessingTest
 app/src/main/assets/
-    models/            your .tflite files (gitignored)
+    models/            the bundled .tflite files
     models_config.json model list: name, file, input size, preprocess, output
     classes.txt        class names, one per line
-common/preprocess.py     the four modes, shared by every script
-training/train_models.py trains the four default models (Intel dataset)
+common/preprocess.py     the five modes, shared by every script
+training/train_models.py trains your own models (Intel dataset), optional
 tools/convert_to_tflite.py  .h5 -> .tflite, with a parity check per model
 tools/verify_parity.py      Keras vs TFLite on a real image
+tools/make_pretrained_models.py  builds the bundled ImageNet models
+tools/predict_demo.py       prints what every bundled model says about your photos
 ```

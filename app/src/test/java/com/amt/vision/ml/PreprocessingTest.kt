@@ -60,6 +60,14 @@ class PreprocessingTest {
     }
 
     @Test
+    fun effnetCentersOn127() {
+        val out = run("effnet")
+        assertPixel(floatArrayOf(1f, 1f, 1f).map { 128f / 128f }.toFloatArray(), out[0][0])
+        assertPixel(floatArrayOf(-127f / 128f, -127f / 128f, -127f / 128f), out[0][1])
+        assertPixel(floatArrayOf(-117f / 128f, -107f / 128f, -97f / 128f), out[1][1])
+    }
+
+    @Test
     fun caffeSwapsToBgrAndSubtractsTheMean() {
         val out = run("caffe")
         assertPixel(floatArrayOf(151.061f, 138.221f, 131.32f), out[0][0])

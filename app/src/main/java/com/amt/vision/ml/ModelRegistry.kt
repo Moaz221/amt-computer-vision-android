@@ -100,6 +100,12 @@ class ModelRegistry(private val context: Context) {
         val spec = spec(modelName)
         val assets = context.assets.list("models")?.toSet() ?: emptySet()
         if (spec.file !in assets) throw ModelNotReadyException(spec.file)
+        // Keep one interpreter alive at a time: the bigger models are ~100 MB each
+        // once loaded, and an ensemble walks through all of them.
+        if (spec.name !in interpreters) {
+            interpreters.values.forEach { it.close() }
+            interpreters.clear()
+        }
         val interpreter = interpreters.getOrPut(spec.name) {
             val fd = context.assets.openFd("models/${spec.file}")
             val buffer = FileInputStream(fd.fileDescriptor).channel.map(
