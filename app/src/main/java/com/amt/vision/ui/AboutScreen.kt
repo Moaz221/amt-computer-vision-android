@@ -79,16 +79,17 @@ fun AboutScreen(onBack: () -> Unit) {
         ) {
             AboutSection(
                 "WHAT IT DOES",
-                "MOAZ Computer Vision classifies any photo, fully on-device. " +
-                    "Upload a picture and the app predicts which of the 1000 ImageNet categories it belongs to, " +
-                    "shows a confidence score, and lists the top 3 guesses. Works with everyday photos: animals, " +
-                    "objects, food, vehicles, scenes and more."
+                "MOAZ Computer Vision looks at a photo and tells you, fully on-device:\n" +
+                    "- its PHOTO CATEGORY, the six classes of the course project (buildings, forest, glacier, " +
+                    "mountain, sea, street) with a confidence score, and\n" +
+                    "- the OBJECT it sees (top 3 of the 1000 ImageNet classes: animals, vehicles, food, objects...).\n" +
+                    "It also shows the image size and path, and a Canny edge view."
             )
             AboutSection(
                 "HOW TO USE",
                 "1. UPLOAD - pick any photo from your gallery.\n" +
                     "2. Choose a model from the model row, or ENSEMBLE to combine all of them.\n" +
-                    "3. PREDICT - run the classification. The result, confidence bar and top 3 appear below.\n" +
+                    "3. PREDICT - run the classification. The photo category, its confidence bar and the top 3 objects appear below.\n" +
                     "4. CANNY - toggle the edge-detection view of the uploaded image.\n" +
                     "5. INFO - show the uploaded image's metadata (dimensions)."
             )
@@ -100,7 +101,11 @@ fun AboutScreen(onBack: () -> Unit) {
                     "- ResNet50 - 50-layer residual network.\n" +
                     "- EfficientNet-Lite0 - MediaPipe mobile model.\n" +
                     "- EfficientNet-Lite2 - bigger MediaPipe mobile model.\n\n" +
-                    "All are trained on ImageNet (ILSVRC 2012, 1000 classes)."
+                    "All are trained on ImageNet (ILSVRC 2012, 1000 classes).\n\n" +
+                    "PHOTO CATEGORY: a small layer (softmax regression) trained on the Intel Image Classification " +
+                    "photos sits on top of the selected model's output and maps it to buildings / forest / glacier / " +
+                    "mountain / sea / street. On 501 held-out Intel test photos it scores about 87-90% depending on the model " +
+                    "(ensemble 89.6%). When the top score is under 50% (for example a close-up of a cat) the app says NO CLEAR SCENE and still lists the closest categories."
             )
             AboutSection(
                 "ENSEMBLE MODE",
@@ -120,7 +125,7 @@ fun AboutScreen(onBack: () -> Unit) {
                     "- Class labels: ImageNet / ILSVRC 2012.\n" +
                     "- App icon: original generated artwork, free to use.\n" +
                     "- Built with Kotlin, Jetpack Compose and TensorFlow Lite.\n\n" +
-                    "Version 1.3"
+                    "Version 1.4"
             )
             Spacer(Modifier.height(8.dp))
         }

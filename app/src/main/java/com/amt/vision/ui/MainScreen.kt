@@ -33,7 +33,11 @@ data class PredictionUi(
     val label: String,
     val confidence: Float,
     val top: List<Pair<String, Float>>,
-    val note: String?
+    val note: String?,
+    /** Photo category from the course project: buildings, forest, glacier, mountain, sea, street. */
+    val scene: String? = null,
+    val sceneConfidence: Float = 0f,
+    val sceneTop: List<Pair<String, Float>> = emptyList()
 )
 
 data class UiState(
@@ -287,13 +291,49 @@ private fun PredictionPanel(prediction: PredictionUi?) {
             Text("PREDICTION READOUT", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = TextDim)
             Spacer(Modifier.height(8.dp))
             if (prediction != null) {
+                if (prediction.scene != null) {
+                    Text("PHOTO CATEGORY", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = TextDim)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            prediction.scene.uppercase(),
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 26.sp,
+                            color = Accent,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            "${(prediction.sceneConfidence * 100).roundToInt()}%",
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Accent
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(SurfaceAlt)) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(prediction.sceneConfidence.coerceIn(0f, 1f))
+                                .fillMaxHeight()
+                                .background(Brush.horizontalGradient(listOf(Accent.copy(alpha = 0.5f), Accent)))
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        prediction.sceneTop.joinToString("  ") { (n, p) -> "$n ${(p * 100).roundToInt()}%" },
+                        fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = TextDim
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text("OBJECT SEEN (IMAGENET)", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = TextDim)
+                }
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         prediction.label.uppercase(),
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = Accent,
+                        fontSize = if (prediction.scene != null) 16.sp else 22.sp,
+                        color = if (prediction.scene != null) TextMain else Accent,
                         modifier = Modifier.weight(1f)
                     )
                     Text(

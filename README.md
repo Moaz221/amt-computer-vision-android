@@ -32,6 +32,23 @@ classifier with a gaming HUD interface, written in **Kotlin + Jetpack Compose**.
 
 ![Icon](screenshots/icon_preview.png)
 
+## Photo category (the original course app's job)
+
+The original `GUI code.py` classified a photo into **buildings, forest, glacier,
+mountain, sea, street** (Intel Image Classification) and showed the category plus
+its confidence. v1.4 does exactly that on the phone: after PREDICT the readout
+shows **PHOTO CATEGORY** with a confidence bar, then the object the ImageNet model
+sees (top 3).
+
+How: a tiny softmax-regression layer (`app/src/main/assets/scene_head.json`) sits on
+top of the ImageNet probabilities of the selected model or the ensemble. Train or
+retrain it with `python tools/train_scene_head.py --data-dir /path/to/intel`
+(folder with `seg_train/` and `seg_test/`). On 501 held-out Intel test photos:
+MobileNetV2 88.2%, InceptionV3 88.2%, ResNet50 87.2%, EfficientNet-Lite0 88.2%,
+EfficientNet-Lite2 90.4%, ensemble 89.6%. Under 50% confidence the app says
+"no clear scene". `python tools/scene_demo.py photo.jpg` prints the same numbers
+without a phone. The Intel dataset is not redistributed here (its licence is "other").
+
 ## Build & run
 
 It works out of the box: five pretrained ImageNet models are already in

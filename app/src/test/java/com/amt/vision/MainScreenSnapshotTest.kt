@@ -48,7 +48,9 @@ class MainScreenSnapshotTest {
                     label = "tabby",
                     confidence = 0.447f,
                     top = listOf("tabby" to 0.447f, "tiger cat" to 0.186f, "Egyptian cat" to 0.153f),
-                    note = "ensemble of 5: MobileNetV2, InceptionV3, ResNet50, EfficientNet-Lite0, EfficientNet-Lite2"
+                    note = "ensemble of 5: MobileNetV2, InceptionV3, ResNet50, EfficientNet-Lite0, EfficientNet-Lite2",
+                    scene = "no clear scene", sceneConfidence = 0.37f,
+                    sceneTop = listOf("sea" to 0.37f, "buildings" to 0.25f, "street" to 0.12f)
                 ),
                 showInfo = true,
                 imageInfo = "1024 x 626 x 3",

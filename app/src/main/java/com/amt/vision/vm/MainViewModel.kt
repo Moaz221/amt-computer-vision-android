@@ -127,10 +127,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val ranked = probs.indices.sortedByDescending { probs[it] }
                 val label = registry.classes.getOrElse(ranked.first()) { "class ${ranked.first()}" }
                 val top = ranked.take(3).map { (registry.classes.getOrElse(it) { "class $it" }) to probs[it] }
+                val sceneProbs = registry.sceneHead?.predict(probs)
+                val sceneRank = sceneProbs?.indices?.sortedByDescending { sceneProbs[it] }
+                val ui = PredictionUi(
+                    label, probs[ranked.first()], top, fullNote,
+                    scene = sceneRank?.first()?.let { if (sceneProbs[it] < 0.5f) "no clear scene" else registry.sceneHead!!.classes[it] },
+                    sceneConfidence = sceneRank?.first()?.let { sceneProbs[it] } ?: 0f,
+                    sceneTop = sceneRank?.take(3)?.map { registry.sceneHead!!.classes[it] to sceneProbs[it] } ?: emptyList()
+                )
                 _state.update {
                     it.copy(
                         predicting = false,
-                        prediction = PredictionUi(label, probs[ranked.first()], top, fullNote),
+                        prediction = ui,
                         status = "PREDICTION COMPLETE"
                     )
                 }

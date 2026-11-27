@@ -38,6 +38,14 @@ class ModelRegistry(private val context: Context) {
 
     private val interpreters = mutableMapOf<String, Interpreter>()
 
+    /** Photo category head (buildings / forest / glacier / mountain / sea / street). */
+    val sceneHead: SceneHead? = try {
+        SceneHead.fromJson(context.assets.open("scene_head.json").bufferedReader().use { it.readText() })
+    } catch (e: Exception) {
+        Log.w(TAG, "scene_head.json not loaded: ${e.message}")
+        null
+    }
+
     init {
         val warnings = mutableListOf<String>()
         val config = JSONObject(context.assets.open("models_config.json").bufferedReader().use { it.readText() })
