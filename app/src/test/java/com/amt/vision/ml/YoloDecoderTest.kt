@@ -20,6 +20,18 @@ class YoloDecoderTest {
         assertEquals(0.72f, d[0].score, 0.001f)
     }
 
+    @Test fun junkRowWithHugeSizeDoesNotSwitchToPixelUnits() {
+        // Normalized export where an unconfident row has a width above 1.5: must stay normalized.
+        val good = floatArrayOf(0.5f, 0.5f, 0.4f, 0.6f, 0.9f, 0.9f, 0.1f)
+        val junk = floatArrayOf(0.5f, 0.5f, 2.0f, 2.0f, 0.01f, 0.5f, 0.5f)
+        val d = YoloDecoder.decode(arrayOf(good, junk), labels, 480, 128, 128)
+        assertEquals(1, d.size)
+        assertEquals(38.4f, d[0].left, 0.5f)
+        assertEquals(89.6f, d[0].right, 0.5f)
+        assertEquals(25.6f, d[0].top, 0.5f)
+        assertEquals(102.4f, d[0].bottom, 0.5f)
+    }
+
     @Test fun dropsLowConfidenceAndSuppressesOverlaps() {
         val a = floatArrayOf(0.5f, 0.5f, 0.4f, 0.4f, 0.9f, 0.9f, 0.1f)
         val b = floatArrayOf(0.51f, 0.5f, 0.4f, 0.4f, 0.8f, 0.9f, 0.1f) // same object, lower score

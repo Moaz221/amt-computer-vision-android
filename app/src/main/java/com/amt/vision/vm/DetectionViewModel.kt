@@ -19,7 +19,7 @@ data class DetectionState(
     val detections: List<Detection> = emptyList(),
     val modelReady: Boolean = false,
     val running: Boolean = false,
-    val threshold: Float = 0.25f,
+    val threshold: Float = 0.20f,
     val status: String = "STANDBY"
 )
 

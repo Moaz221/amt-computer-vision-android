@@ -44,7 +44,11 @@ object YoloDecoder {
     ): List<Detection> {
         if (rows.isEmpty()) return emptyList()
         val lb = letterbox(srcW, srcH, inputSize)
-        val normalized = rows.maxOf { max(max(it[0], it[1]), max(it[2], it[3])) } <= 1.5f
+        // Decide the unit from the box CENTERS of confident rows only. Junk rows can have a width or
+        // height above 1.5 even in a normalized export, which used to flip this to "pixels" and
+        // draw every box as a tiny/huge rectangle in the top-left corner.
+        val confident = rows.filter { it[4] >= confThreshold }
+        val normalized = confident.isEmpty() || confident.maxOf { max(it[0], it[1]) } <= 1.5f
         val k = if (normalized) inputSize.toFloat() else 1f
         val found = ArrayList<Detection>()
         for (r in rows) {
