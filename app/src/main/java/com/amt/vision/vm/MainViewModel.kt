@@ -43,13 +43,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.Default) {
             val resolver = getApplication<Application>().contentResolver
             val bitmap = resolver.openInputStream(uri)?.use { input ->
-                val bytes = input.readBytes()
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                var sample = 1
-                while (bounds.outWidth / (sample * 2) >= 1024 && bounds.outHeight / (sample * 2) >= 1024) sample *= 2
-                val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+                com.amt.vision.util.BitmapLoader.decode(input.readBytes(), 1024)
             }
             if (bitmap == null) {
                 _state.update { it.copy(status = "FAILED TO LOAD IMAGE") }

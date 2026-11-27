@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
                         state = dstate,
                         onUpload = { detectPicker.launch("image/*") },
                         onDetect = dvm::onDetect,
+                        onRotate = dvm::onRotate,
                         onThreshold = dvm::onThreshold,
                         onBack = { showDetect = false }
                     )

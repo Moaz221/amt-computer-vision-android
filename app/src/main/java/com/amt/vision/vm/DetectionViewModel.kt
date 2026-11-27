@@ -36,12 +36,7 @@ class DetectionViewModel(app: Application) : AndroidViewModel(app) {
     fun onImagePicked(uri: Uri) {
         viewModelScope.launch(Dispatchers.Default) {
             val bmp = getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
-                val bytes = input.readBytes()
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                var sample = 1
-                while (bounds.outWidth / (sample * 2) >= 1280 && bounds.outHeight / (sample * 2) >= 1280) sample *= 2
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
+                com.amt.vision.util.BitmapLoader.decode(input.readBytes(), 1280)
             }
             if (bmp == null) {
                 _state.update { it.copy(status = "FAILED TO LOAD IMAGE") }
@@ -54,6 +49,19 @@ class DetectionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onThreshold(value: Float) {
         _state.update { it.copy(threshold = value) }
+    }
+
+    fun onRotate() {
+        val bmp = _state.value.bitmap ?: run {
+            _state.update { it.copy(status = "NO IMAGE LOADED") }
+            return
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            val m = android.graphics.Matrix().apply { postRotate(90f) }
+            val rotated = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, m, true)
+            _state.update { it.copy(bitmap = rotated, detections = emptyList(), status = "ROTATED 90\u00B0") }
+            runDetection(rotated)
+        }
     }
 
     fun onDetect() {

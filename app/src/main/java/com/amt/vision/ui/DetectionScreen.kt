@@ -35,6 +35,7 @@ fun DetectionScreen(
     state: DetectionState,
     onUpload: () -> Unit,
     onDetect: () -> Unit,
+    onRotate: () -> Unit = {},
     onThreshold: (Float) -> Unit,
     onBack: () -> Unit
 ) {
@@ -98,6 +99,10 @@ fun DetectionScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Chip("UPLOAD IMAGE", onUpload, Modifier.weight(1f))
             Chip(if (state.running) "RUNNING..." else "DETECT", onDetect, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Chip("ROTATE 90\u00B0", onRotate, Modifier.weight(1f))
         }
         Spacer(Modifier.height(8.dp))
         Text(
