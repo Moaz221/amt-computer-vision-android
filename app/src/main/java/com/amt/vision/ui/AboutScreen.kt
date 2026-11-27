@@ -79,7 +79,7 @@ fun AboutScreen(onBack: () -> Unit) {
         ) {
             AboutSection(
                 "WHAT IT DOES",
-                "AMT Computer Vision classifies any photo, fully on-device. " +
+                "MOAZ Computer Vision classifies any photo, fully on-device. " +
                     "Upload a picture and the app predicts which of the 1000 ImageNet categories it belongs to, " +
                     "shows a confidence score, and lists the top 3 guesses. Works with everyday photos: animals, " +
                     "objects, food, vehicles, scenes and more."
@@ -120,7 +120,7 @@ fun AboutScreen(onBack: () -> Unit) {
                     "- Class labels: ImageNet / ILSVRC 2012.\n" +
                     "- App icon: original generated artwork, free to use.\n" +
                     "- Built with Kotlin, Jetpack Compose and TensorFlow Lite.\n\n" +
-                    "Version 1.2"
+                    "Version 1.3"
             )
             Spacer(Modifier.height(8.dp))
         }

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the AMT Computer Vision launcher icon (original artwork, no external assets).
+"""Generate the MOAZ Computer Vision launcher icon (original artwork, no external assets).
 
-Calm deep-blue gradient with a photo glyph (sun + mountains) and a small AI sparkle.
-Writes legacy mipmap PNGs, an adaptive-icon foreground + background, and previews.
+Calm deep-blue gradient with an eye + camera focus brackets: what the app does is
+on-device computer vision. Writes legacy mipmap PNGs, an adaptive-icon
+foreground + background, and previews.
 """
 import math
 import os
@@ -16,10 +17,11 @@ S = 1024  # master canvas
 
 TOP = (58, 96, 138)    # calm steel blue
 BOTTOM = (13, 26, 43)  # deep navy
-SUN = (255, 222, 150)  # soft warm sun
-BACK_MTN = (122, 168, 199)
-FRONT_MTN = (232, 243, 249)
-SPARKLE = (140, 226, 255)
+EYE_WHITE = (232, 243, 249)
+IRIS = (86, 200, 232)
+IRIS_DEEP = (38, 130, 170)
+PUPIL = (10, 24, 40)
+BRACKET = (143, 227, 255)
 
 
 def gradient(size, top, bottom):
@@ -30,39 +32,58 @@ def gradient(size, top, bottom):
     return g.resize((size, size))
 
 
+def almond(cx, cy, w, h, steps=120):
+    """Eye outline: pointed canthi, slightly asymmetric lids."""
+    up, lo = [], []
+    for i in range(steps + 1):
+        t = i / steps
+        x = cx - w / 2 + w * t
+        arch = math.sin(math.pi * t)
+        up.append((x, cy - h * 0.52 * arch))
+        lo.append((x, cy + h * 0.44 * arch))
+    return up + lo[::-1]
+
+
 def draw_glyph(draw, box, glow_layer=None):
-    """Draw the photo glyph inside box=(x0, y0, x1, y1) on draw."""
+    """Draw the eye + focus brackets inside box=(x0, y0, x1, y1)."""
     x0, y0, x1, y1 = box
     w = x1 - x0
     h = y1 - y0
+    cx, cy = x0 + w / 2, y0 + h / 2
 
-    def px(fx, fy):
-        return (x0 + fx * w, y0 + fy * h)
-
-    # sun with soft glow
-    sc, sr = px(0.40, 0.34), 0.10 * w
+    # soft glow behind the eye
     if glow_layer is not None:
         gd = ImageDraw.Draw(glow_layer)
-        gd.ellipse([sc[0] - sr * 1.9, sc[1] - sr * 1.9, sc[0] + sr * 1.9, sc[1] + sr * 1.9],
-                   fill=SUN + (90,))
-    draw.ellipse([sc[0] - sr, sc[1] - sr, sc[0] + sr, sc[1] + sr], fill=SUN)
+        gr = 0.34 * w
+        gd.ellipse([cx - gr, cy - gr, cx + gr, cy + gr], fill=(180, 220, 240, 70))
 
-    # mountains (back then front)
-    base = px(0, 0.78)[1]
-    draw.polygon([px(0.14, 0.78), px(0.38, 0.50), px(0.60, 0.78)], fill=BACK_MTN)
-    draw.polygon([px(0.42, 0.78), px(0.64, 0.56), px(0.84, 0.78)], fill=FRONT_MTN)
-    # ground line
-    draw.rectangle([px(0.14, 0.78)[0], base, px(0.84, 0.78)[0], base + 0.012 * h], fill=FRONT_MTN)
+    # camera focus brackets
+    m = 0.06 * w          # inset from box edges
+    arm = 0.13 * w        # bracket arm length
+    st = max(int(0.016 * w), 2)
+    for sx in (0, 1):
+        for sy in (0, 1):
+            bx = x0 + m if sx == 0 else x1 - m
+            by = y0 + m if sy == 0 else y1 - m
+            dx = 1 if sx == 0 else -1
+            dy = 1 if sy == 0 else -1
+            draw.line([bx, by, bx + dx * arm, by], fill=BRACKET, width=st)
+            draw.line([bx, by, bx, by + dy * arm], fill=BRACKET, width=st)
 
-    # AI sparkle (4-point star)
-    cx, cy = px(0.72, 0.28)
-    r = 0.075 * w
-    pts = []
-    for i in range(8):
-        ang = math.pi / 4 * i - math.pi / 2
-        rr = r if i % 2 == 0 else r * 0.28
-        pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
-    draw.polygon(pts, fill=SPARKLE)
+    # eye
+    eye_w, eye_h = 0.62 * w, 0.34 * w
+    draw.polygon(almond(cx, cy, eye_w, eye_h), fill=EYE_WHITE)
+
+    # iris, deep ring, pupil, highlight
+    ir = 0.135 * w
+    draw.ellipse([cx - ir, cy - ir, cx + ir, cy + ir], fill=IRIS)
+    rr = ir * 0.72
+    draw.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=IRIS_DEEP)
+    pr = ir * 0.42
+    draw.ellipse([cx - pr, cy - pr, cx + pr, cy + pr], fill=PUPIL)
+    hr = ir * 0.16
+    hx, hy = cx - ir * 0.35, cy - ir * 0.35
+    draw.ellipse([hx - hr, hy - hr, hx + hr, hy + hr], fill=EYE_WHITE)
 
 
 def rounded_mask(size, radius):
@@ -78,7 +99,7 @@ def build_master():
     glyph = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(glyph)
     draw_glyph(d, (0, 0, S, S), glow_layer=glow)
-    glow = glow.filter(ImageFilter.GaussianBlur(S * 0.02))
+    glow = glow.filter(ImageFilter.GaussianBlur(S * 0.03))
     img = Image.alpha_composite(img, glow)
     img = Image.alpha_composite(img, glyph)
     return img
@@ -89,10 +110,9 @@ def build_foreground():
     fg = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     glow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(fg)
-    # central 66% safe zone
     m = S * 0.17
     draw_glyph(d, (m, m, S - m, S - m), glow_layer=glow)
-    glow = glow.filter(ImageFilter.GaussianBlur(S * 0.015))
+    glow = glow.filter(ImageFilter.GaussianBlur(S * 0.02))
     return Image.alpha_composite(glow, fg)
 
 
@@ -137,7 +157,6 @@ def main():
     prev = os.path.join(ROOT, "screenshots")
     os.makedirs(prev, exist_ok=True)
     master.save(os.path.join(prev, "icon_master.png"))
-    # launcher-style preview: circular mask on a dark backdrop, next to the square
     canvas = Image.new("RGBA", (S * 2 + 60, S + 120), (10, 16, 26, 255))
     sq = master.copy()
     sq.putalpha(rounded_mask(S, int(S * 0.18)))
