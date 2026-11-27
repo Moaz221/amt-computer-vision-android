@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -56,7 +57,8 @@ fun MainScreen(
     onToggleCanny: () -> Unit,
     onPredict: () -> Unit,
     onToggleInfo: () -> Unit,
-    onSelectModel: (String) -> Unit
+    onSelectModel: (String) -> Unit,
+    onAbout: () -> Unit
 ) {
     Column(
         Modifier
@@ -66,7 +68,7 @@ fun MainScreen(
             .navigationBarsPadding()
             .padding(12.dp)
     ) {
-        TopBar()
+        TopBar(onAbout)
         Spacer(Modifier.height(10.dp))
         HudViewport(state, Modifier.weight(1f).fillMaxWidth())
         Spacer(Modifier.height(10.dp))
@@ -87,22 +89,42 @@ fun MainScreen(
 }
 
 @Composable
-private fun TopBar() {
-    Column {
-        Text(
-            "MOAZ COMPUTER VISION",
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            color = TextMain
-        )
-        Spacer(Modifier.height(6.dp))
+private fun TopBar(onAbout: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                "MOAZ COMPUTER VISION",
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = TextMain
+            )
+            Spacer(Modifier.height(6.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .background(Brush.horizontalGradient(listOf(Accent, Accent.copy(alpha = 0f))))
+            )
+        }
+        Spacer(Modifier.width(12.dp))
         Box(
             Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .background(Brush.horizontalGradient(listOf(Accent, Accent.copy(alpha = 0f))))
-        )
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(AccentFaint)
+                .border(1.dp, Accent.copy(alpha = 0.6f), CircleShape)
+                .clickable(onClick = onAbout),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "i",
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Accent
+            )
+        }
     }
 }
 

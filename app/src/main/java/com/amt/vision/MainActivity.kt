@@ -7,7 +7,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.amt.vision.ui.AboutScreen
 import com.amt.vision.ui.AppTheme
 import com.amt.vision.ui.MainScreen
 import com.amt.vision.vm.MainViewModel
@@ -19,17 +23,23 @@ class MainActivity : ComponentActivity() {
             AppTheme {
                 val vm: MainViewModel = viewModel()
                 val state by vm.state.collectAsState()
+                var showAbout by rememberSaveable { mutableStateOf(false) }
                 val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
                     uri?.let { vm.onImagePicked(it) }
                 }
-                MainScreen(
-                    state = state,
-                    onUpload = { picker.launch("image/*") },
-                    onToggleCanny = vm::onToggleCanny,
-                    onPredict = vm::onPredict,
-                    onToggleInfo = vm::onToggleInfo,
-                    onSelectModel = vm::onSelectModel
-                )
+                if (showAbout) {
+                    AboutScreen(onBack = { showAbout = false })
+                } else {
+                    MainScreen(
+                        state = state,
+                        onUpload = { picker.launch("image/*") },
+                        onToggleCanny = vm::onToggleCanny,
+                        onPredict = vm::onPredict,
+                        onToggleInfo = vm::onToggleInfo,
+                        onSelectModel = vm::onSelectModel,
+                        onAbout = { showAbout = true }
+                    )
+                }
             }
         }
     }

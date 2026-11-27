@@ -23,6 +23,14 @@ classifier with a gaming HUD interface, written in **Kotlin + Jetpack Compose**.
   available model and reports which models were used/skipped.
 - **Unified neon theme**: one cyan accent on deep-space dark, HUD grid,
   targeting brackets, mode readout (STANDBY / RGB / CANNY).
+- **About screen**: the "i" button in the top bar opens a full guide - what the
+  app does, how to use it, the bundled models, ensemble mode, privacy and
+  credits.
+- **Custom launcher icon**: original generated artwork (calm landscape photo
+  glyph + AI sparkle), no external assets, free to use. Regenerate with
+  `python3 tools/make_icon.py`.
+
+![Icon](screenshots/icon_preview.png)
 
 ## Build & run
 

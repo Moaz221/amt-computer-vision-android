@@ -27,7 +27,7 @@ class MainScreenSnapshotTest {
 
     private fun screen(state: UiState) {
         paparazzi.snapshot {
-            AppTheme { MainScreen(state, {}, {}, {}, {}, {}) }
+            AppTheme { MainScreen(state, {}, {}, {}, {}, {}, {}) }
         }
     }
 
