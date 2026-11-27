@@ -246,3 +246,15 @@ tools/verify_parity.py      Keras vs TFLite on a real image
 tools/make_pretrained_models.py  builds the bundled ImageNet models
 tools/predict_demo.py       prints what every bundled model says about your photos
 ```
+
+## Object detection (YOLOv5)
+
+The DETECT button on the main screen opens an object-detection screen: pick an image, boxes with labels and confidence are drawn on it, and a slider sets the confidence threshold.
+
+The model is not in the repo yet. To add it:
+
+1. Open `tools/yolo_training.ipynb` in Google Colab (GPU), add your Roboflow key as the Colab secret `ROBOFLOW_API_KEY`, run all cells.
+2. Download `detector.tflite` and `detector_classes.txt` from the last cell.
+3. Copy both into `app/src/main/assets/models/` and rebuild. Until then the screen shows "DETECTOR MODEL NOT INSTALLED".
+
+The decoding and NMS logic is in `ml/YoloDecoder.kt` with JVM unit tests (`YoloDecoderTest`).

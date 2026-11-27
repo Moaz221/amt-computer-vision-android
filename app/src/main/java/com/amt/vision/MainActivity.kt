@@ -13,6 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.amt.vision.ui.AboutScreen
 import com.amt.vision.ui.AppTheme
+import com.amt.vision.ui.DetectionScreen
+import com.amt.vision.vm.DetectionViewModel
 import com.amt.vision.ui.MainScreen
 import com.amt.vision.vm.MainViewModel
 
@@ -23,11 +25,25 @@ class MainActivity : ComponentActivity() {
             AppTheme {
                 val vm: MainViewModel = viewModel()
                 val state by vm.state.collectAsState()
+                val dvm: DetectionViewModel = viewModel()
+                val dstate by dvm.state.collectAsState()
+                var showDetect by rememberSaveable { mutableStateOf(false) }
+                val detectPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    uri?.let { dvm.onImagePicked(it) }
+                }
                 var showAbout by rememberSaveable { mutableStateOf(false) }
                 val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
                     uri?.let { vm.onImagePicked(it) }
                 }
-                if (showAbout) {
+                if (showDetect) {
+                    DetectionScreen(
+                        state = dstate,
+                        onUpload = { detectPicker.launch("image/*") },
+                        onDetect = dvm::onDetect,
+                        onThreshold = dvm::onThreshold,
+                        onBack = { showDetect = false }
+                    )
+                } else if (showAbout) {
                     AboutScreen(onBack = { showAbout = false })
                 } else {
                     MainScreen(
@@ -37,7 +53,8 @@ class MainActivity : ComponentActivity() {
                         onPredict = vm::onPredict,
                         onToggleInfo = vm::onToggleInfo,
                         onSelectModel = vm::onSelectModel,
-                        onAbout = { showAbout = true }
+                        onAbout = { showAbout = true },
+                        onDetect = { showDetect = true }
                     )
                 }
             }

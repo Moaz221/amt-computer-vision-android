@@ -62,7 +62,8 @@ fun MainScreen(
     onPredict: () -> Unit,
     onToggleInfo: () -> Unit,
     onSelectModel: (String) -> Unit,
-    onAbout: () -> Unit
+    onAbout: () -> Unit,
+    onDetect: () -> Unit = {}
 ) {
     Column(
         Modifier
@@ -72,7 +73,7 @@ fun MainScreen(
             .navigationBarsPadding()
             .padding(12.dp)
     ) {
-        TopBar(onAbout)
+        TopBar(onAbout, onDetect)
         Spacer(Modifier.height(10.dp))
         HudViewport(state, Modifier.weight(1f).fillMaxWidth())
         Spacer(Modifier.height(10.dp))
@@ -93,7 +94,7 @@ fun MainScreen(
 }
 
 @Composable
-private fun TopBar(onAbout: () -> Unit) {
+private fun TopBar(onAbout: () -> Unit, onDetect: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(
@@ -112,6 +113,19 @@ private fun TopBar(onAbout: () -> Unit) {
             )
         }
         Spacer(Modifier.width(12.dp))
+        Box(
+            Modifier
+                .height(40.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(AccentFaint)
+                .border(1.dp, Accent.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+                .clickable(onClick = onDetect)
+                .padding(horizontal = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("DETECT", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Accent)
+        }
+        Spacer(Modifier.width(8.dp))
         Box(
             Modifier
                 .size(40.dp)
