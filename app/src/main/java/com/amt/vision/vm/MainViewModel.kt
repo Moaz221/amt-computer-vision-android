@@ -118,15 +118,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     p to note
                 } else {
-                    registry.classify(current.selectedModel, src) to "model: ${current.selectedModel}"
+                    val spec = registry.spec(current.selectedModel)
+                    registry.classify(current.selectedModel, src) to
+                        "model: ${spec.name} | ${spec.preprocess} -> ${spec.output}"
                 }
+                val fullNote = if (registry.configWarnings.isEmpty()) note
+                else registry.configWarnings.joinToString(" | ") + " | " + note
                 val ranked = probs.indices.sortedByDescending { probs[it] }
                 val label = registry.classes.getOrElse(ranked.first()) { "class ${ranked.first()}" }
                 val top = ranked.take(3).map { (registry.classes.getOrElse(it) { "class $it" }) to probs[it] }
                 _state.update {
                     it.copy(
                         predicting = false,
-                        prediction = PredictionUi(label, probs[ranked.first()], top, note),
+                        prediction = PredictionUi(label, probs[ranked.first()], top, fullNote),
                         status = "PREDICTION COMPLETE"
                     )
                 }

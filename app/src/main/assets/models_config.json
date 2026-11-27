@@ -1,9 +1,9 @@
 {
   "classes_file": "classes.txt",
   "models": [
-    { "name": "VGG-19",     "file": "vgg19.tflite",       "input_size": [224, 224], "preprocess": "caffe"   },
-    { "name": "InceptionV3","file": "inceptionv3.tflite", "input_size": [299, 299], "preprocess": "tf"      },
-    { "name": "AlexNet",    "file": "alexnet.tflite",     "input_size": [227, 227], "preprocess": "caffe"   },
-    { "name": "Custom CNN", "file": "custom_cnn.tflite",  "input_size": [100, 100], "preprocess": "rescale" }
+    { "name": "VGG-19",     "file": "vgg19.tflite",       "input_size": [224, 224], "preprocess": "caffe",   "output": "softmax" },
+    { "name": "InceptionV3","file": "inceptionv3.tflite", "input_size": [299, 299], "preprocess": "tf",      "output": "softmax" },
+    { "name": "AlexNet",    "file": "alexnet.tflite",     "input_size": [227, 227], "preprocess": "caffe",   "output": "softmax" },
+    { "name": "Custom CNN", "file": "custom_cnn.tflite",  "input_size": [100, 100], "preprocess": "rescale", "output": "softmax" }
   ]
 }

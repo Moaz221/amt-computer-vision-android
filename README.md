@@ -28,31 +28,158 @@ classifier with a gaming HUD interface, written in **Kotlin + Jetpack Compose**.
 1. Open the repo in **Android Studio** (Hedgehog or newer).
 2. Let Gradle sync, then run on a device or emulator (minSdk 24).
 
-## Adding the trained models
+The app builds and runs without any weights: Predict reports `MISSING WEIGHTS`
+until you add them, and everything else (gallery, Canny, HUD) works.
 
-The `.tflite` weight files are not in the repo (too large). The app runs
-without them and reports "missing weights" on Predict until you add them.
+## Adding your own models
 
-1. Put your trained `.h5` files in `models/` (same names as
-   `models_config.json`: `vgg19.h5`, `inceptionv3.h5`, `alexnet.h5`,
-   `custom_cnn.h5`). Train them with `training/train_models.py` if needed.
-2. Convert them to TensorFlow Lite:
-   ```
-   python tools/convert_to_tflite.py
-   ```
-   This writes the `.tflite` files into `app/src/main/assets/models/` and
-   updates `app/src/main/assets/models_config.json` and `classes.txt`.
-3. Rebuild. If your file names, input sizes or preprocessing differ, edit
-   `app/src/main/assets/models_config.json` by hand.
+The `.tflite` files are not in the repo (too large). Three steps, all from the
+repo root.
 
-Preprocess modes supported: `caffe` (BGR, VGG mean), `tf` (-1..1),
-`rescale` (0..1). Class labels live in `app/src/main/assets/classes.txt`.
+### 1. Train, or bring your own `.h5`
+
+```
+python training/train_models.py --data-dir /path/to/seg_train --epochs 10
+```
+
+This writes `models/*.h5` plus `models_config.json` and `classes.txt` at the
+repo root. Both are gitignored: they describe your weights, not the app.
+
+- `--models custom_cnn vgg19` trains a subset.
+- `--output logits` trains without a final softmax (see "logits vs softmax").
+- The dataset folder needs one subfolder per class, the layout of
+  [Intel Image Classification](https://www.kaggle.com/datasets/puneet6060/intel-image-classification).
+- Class names are written in the generator's label order, which is the order
+  the app uses to name predictions.
+
+Already have `.h5` files from another script? Skip to step 2 and point
+`--weights-dir` at them; the converter reads the preprocessing and output mode
+off the model itself.
+
+### 2. Convert
+
+```
+python tools/convert_to_tflite.py
+```
+
+Reads `models_config.json` (falling back to the app's own
+`app/src/main/assets/models_config.json` when there is no root manifest),
+converts every `.h5` it finds in `models/` into
+`app/src/main/assets/models/`, then rewrites the app's config and class list.
+Weights that are missing are skipped, not an error.
+
+Explicit paths, when your files live elsewhere:
+
+```
+python tools/convert_to_tflite.py \
+    --config my_models.json --labels my_classes.txt --weights-dir /path/to/h5
+```
+
+Other flags: `--model "Custom CNN"` (one model), `--set-preprocess caffe`,
+`--set-output logits` (override what the converter detects),
+`--check-only` (verify an existing setup without converting).
+
+Each conversion is checked as it runs: the same input tensor goes through Keras
+and through the new `.tflite`, and you should see a line like
+
+```
+        parity: keras=sea (0.9933)  tflite=sea (0.9933)  max|diff|=3.17e-08  [softmax]
+```
+
+A mismatch stops that model instead of shipping a wrong one. With more than one
+model each is converted in its own process, so a heavy VGG-19 conversion cannot
+run the machine out of memory halfway through the others.
+
+### 3. Rebuild
+
+Predict now runs your models. If a file name, input size or preprocessing
+differs from the defaults, edit `app/src/main/assets/models_config.json` by
+hand (or re-run the converter with the right flags).
+
+## Preprocessing: the part that must match
+
+A model only recognises what it was trained on. Feed it a differently scaled
+image and it still returns confident-looking numbers, just wrong ones. There
+are four modes and both sides use the same four:
+
+| mode      | what it does                                   | value range |
+|-----------|------------------------------------------------|-------------|
+| `raw`     | RGB unchanged (the graph normalises itself)    | 0..255      |
+| `rescale` | RGB / 255                                      | 0..1        |
+| `tf`      | RGB / 127.5 - 1                                | -1..1       |
+| `caffe`   | RGB -> BGR, minus `[103.939, 116.779, 123.68]` | about -124..131 |
+
+`raw` exists for one reason: some `.h5` files normalise their own input. A model
+whose graph starts with `Rescaling(1/255)` must be fed 0..255, not 0..1,
+or the division happens twice and the image collapses to near zero. The
+converter spots that layer and writes `preprocess: "raw"` for you.
+
+Each entry in `models_config.json`:
+
+| field        | meaning                                                    |
+|--------------|------------------------------------------------------------|
+| `name`       | label in the model selector                                |
+| `file`       | `.tflite` in `app/src/main/assets/models/`                 |
+| `input_size` | `[width, height]` the bitmap is resized to                 |
+| `preprocess` | one of the four modes above                                |
+| `output`     | `softmax` (probabilities) or `logits` (raw scores)         |
+
+### logits vs softmax
+
+`output: "softmax"` means the last layer already produces probabilities summing
+to 1, so the app uses them as they are. `output: "logits"` means raw scores, and
+the app applies softmax. Applying softmax twice is not harmless: the ranking
+survives but every score is pushed toward `1 / number_of_classes`, so a model
+that was sure of itself displays as barely guessing.
+
+The converter reads this off the model's last layer, so both stay honest even
+if you edit the config by hand.
+
+The two implementations are `common/preprocess.py` (used by training and by the
+conversion/verification scripts) and `Preprocessing.kt` (used by the app).
+`PreprocessingTest` holds the reference numbers for all four modes; if it fails,
+the phone and the trainer have drifted apart.
+
+## Checking a model end to end
+
+```
+python tools/verify_parity.py --image /path/to/photo.jpg
+python tools/verify_parity.py --image photo.jpg --model alexnet --top-k 3
+```
+
+Prints the top classes and scores from the `.h5` and from the `.tflite`, plus
+the largest difference between them, and exits non-zero if the top class or the
+score disagrees. `--tflite-only` skips the Keras side when you only have the
+converted file. `--dump-tensor FILE` writes the exact input tensor it fed both.
+
+The app's side of the same check is a plain unit test: open the project in
+Android Studio and run `PreprocessingTest`
+(`app/src/test/java/com/amt/vision/ml/PreprocessingTest.kt`).
+
+## Troubleshooting
+
+| symptom | cause |
+|---|---|
+| `MISSING WEIGHTS` on Predict | no `.tflite` in `app/src/main/assets/models/` with the name in `models_config.json` |
+| `INFERENCE ERROR: ... outputs 6 values but classes.txt has 3 classes` | class list and model disagree; convert again with the right `--labels` |
+| every prediction looks nearly identical, confidence around `1/N` | softmax applied to a softmax: set `output: "softmax"` if the model ends in one |
+| confident but wrong predictions on every image | preprocessing mismatch: check the mode against how the model was trained |
+| converter says `no models/<name>.h5 in models` | weights are missing or named differently; use `--weights-dir` |
 
 ## Project layout
 
-- `app/src/main/java/com/amt/vision/ui` - Compose screens and theme
-- `app/src/main/java/com/amt/vision/ml` - Canny + TFLite model registry
-- `app/src/main/java/com/amt/vision/vm` - state (ViewModel)
-- `app/src/test` - Paparazzi screenshot tests (the images above)
-- `tools/convert_to_tflite.py` - .h5 -> .tflite conversion
-- `training/train_models.py` - trains the 4 default models (Intel dataset)
+```
+app/src/main/java/com/amt/vision/
+    ui/          Compose screens and theme
+    ml/          Canny, model registry, preprocessing
+    vm/          state (ViewModel)
+app/src/test/    Paparazzi screenshot tests (the images above) + PreprocessingTest
+app/src/main/assets/
+    models/            your .tflite files (gitignored)
+    models_config.json model list: name, file, input size, preprocess, output
+    classes.txt        class names, one per line
+common/preprocess.py     the four modes, shared by every script
+training/train_models.py trains the four default models (Intel dataset)
+tools/convert_to_tflite.py  .h5 -> .tflite, with a parity check per model
+tools/verify_parity.py      Keras vs TFLite on a real image
+```

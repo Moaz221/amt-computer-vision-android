@@ -2,20 +2,29 @@ package com.amt.vision.ml
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import org.json.JSONObject
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
-import kotlin.math.exp
 
 class ModelNotReadyException(val modelFile: String) : Exception("Model file missing: models/$modelFile")
 
+/**
+ * One entry of models_config.json.
+ *
+ * [preprocess] is how the bitmap becomes the input tensor and [output] is what
+ * the last layer produces - "softmax" (probabilities, used as they are) or
+ * "logits" (raw scores, softmaxed here). Both are written by
+ * tools/convert_to_tflite.py, which reads them off the Keras model itself.
+ */
 data class ModelSpec(
     val name: String,
     val file: String,
     val inputW: Int,
     val inputH: Int,
-    val preprocess: String
+    val preprocess: String,
+    val output: String
 )
 
 /** Loads models_config.json from assets, runs single-model and ensemble predictions with TFLite. */
@@ -23,25 +32,54 @@ class ModelRegistry(private val context: Context) {
 
     private val specs: List<ModelSpec>
     val classes: List<String>
+
+    /** Config problems found while loading, surfaced in the UI instead of failing silently. */
+    val configWarnings: List<String>
+
     private val interpreters = mutableMapOf<String, Interpreter>()
 
     init {
+        val warnings = mutableListOf<String>()
         val config = JSONObject(context.assets.open("models_config.json").bufferedReader().use { it.readText() })
         specs = config.getJSONArray("models").let { arr ->
             (0 until arr.length()).map { i ->
                 val o = arr.getJSONObject(i)
                 val size = o.getJSONArray("input_size")
+                val name = o.getString("name")
                 ModelSpec(
-                    name = o.getString("name"),
+                    name = name,
                     file = o.getString("file"),
                     inputW = size.getInt(0),
                     inputH = size.getInt(1),
-                    preprocess = o.optString("preprocess", "rescale")
+                    preprocess = resolve(name, "preprocess", o.optString("preprocess", ""), warnings) {
+                        Preprocessing.normalizeMode(it)
+                    },
+                    output = resolve(name, "output", o.optString("output", ""), warnings) {
+                        Postprocessing.normalizeOutput(it)
+                    }
                 )
             }
         }
         classes = context.assets.open(config.optString("classes_file", "classes.txt"))
             .bufferedReader().readLines().map { it.trim() }.filter { it.isNotEmpty() }
+        configWarnings = warnings
+        warnings.forEach { Log.w(TAG, it) }
+    }
+
+    private fun resolve(
+        modelName: String,
+        key: String,
+        raw: String,
+        warnings: MutableList<String>,
+        normalize: (String) -> String
+    ): String {
+        return try {
+            normalize(raw)
+        } catch (e: IllegalArgumentException) {
+            val fallback = if (key == "output") "softmax" else Preprocessing.DEFAULT_MODE
+            warnings += "$modelName: ${e.message}, using $fallback"
+            fallback
+        }
     }
 
     fun modelNames(): List<String> = specs.map { it.name }
@@ -53,6 +91,11 @@ class ModelRegistry(private val context: Context) {
         return specs.filter { it.file in assets }.map { it.name }
     }
 
+    /**
+     * Runs one model and returns probabilities over [classes].
+     * A "logits" model is softmaxed here; a "softmax" model is returned as-is,
+     * because softmaxing probabilities again flattens every score toward 1/N.
+     */
     fun classify(modelName: String, bitmap: Bitmap): FloatArray {
         val spec = spec(modelName)
         val assets = context.assets.list("models")?.toSet() ?: emptySet()
@@ -64,10 +107,23 @@ class ModelRegistry(private val context: Context) {
             )
             Interpreter(buffer, Interpreter.Options().setNumThreads(4))
         }
-        val input = preprocess(bitmap, spec)
-        val output = Array(1) { FloatArray(classes.size) }
+
+        val scaled = Bitmap.createScaledBitmap(bitmap, spec.inputW, spec.inputH, true)
+        val px = IntArray(spec.inputW * spec.inputH)
+        scaled.getPixels(px, 0, spec.inputW, 0, 0, spec.inputW, spec.inputH)
+        val input = Preprocessing.toInput(spec.preprocess, px, spec.inputW, spec.inputH)
+
+        val outputCount = interpreter.getOutputTensor(0).shape().last()
+        if (outputCount != classes.size) {
+            throw IllegalStateException(
+                "${spec.name} outputs $outputCount values but classes.txt has " +
+                    "${classes.size} classes"
+            )
+        }
+        val output = Array(1) { FloatArray(outputCount) }
         interpreter.run(input, output)
-        return softmax(output[0])
+        val scores = output[0]
+        return if (spec.output == "logits") Postprocessing.softmax(scores) else scores
     }
 
     /** Averages probabilities over every model whose .tflite file is present. Returns (probs, used, skipped). */
@@ -84,32 +140,7 @@ class ModelRegistry(private val context: Context) {
         return Triple(acc, available, skipped)
     }
 
-    private fun preprocess(bitmap: Bitmap, spec: ModelSpec): Array<Array<Array<FloatArray>>> {
-        val scaled = Bitmap.createScaledBitmap(bitmap, spec.inputW, spec.inputH, true)
-        val px = IntArray(spec.inputW * spec.inputH)
-        scaled.getPixels(px, 0, spec.inputW, 0, 0, spec.inputW, spec.inputH)
-        val input = Array(1) { Array(spec.inputH) { Array(spec.inputW) { FloatArray(3) } } }
-        for (y in 0 until spec.inputH) {
-            for (x in 0 until spec.inputW) {
-                val p = px[y * spec.inputW + x]
-                val r = ((p shr 16) and 0xFF).toFloat()
-                val g = ((p shr 8) and 0xFF).toFloat()
-                val b = (p and 0xFF).toFloat()
-                val out = input[0][y][x]
-                when (spec.preprocess) {
-                    "caffe" -> { out[0] = b - 103.939f; out[1] = g - 116.779f; out[2] = r - 123.68f }
-                    "tf" -> { out[0] = r / 127.5f - 1f; out[1] = g / 127.5f - 1f; out[2] = b / 127.5f - 1f }
-                    else -> { out[0] = r / 255f; out[1] = g / 255f; out[2] = b / 255f }
-                }
-            }
-        }
-        return input
-    }
-
-    private fun softmax(logits: FloatArray): FloatArray {
-        val max = logits.max()
-        val exps = FloatArray(logits.size) { exp((logits[it] - max).toDouble()).toFloat() }
-        val sum = exps.sum()
-        return FloatArray(logits.size) { exps[it] / sum }
+    private companion object {
+        const val TAG = "ModelRegistry"
     }
 }
